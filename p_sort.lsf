@@ -1,0 +1,15 @@
+#!/bin/bash
+#BSUB -J sosrt
+#BSUB -o 32.out
+#BSUB -e 32.err
+#BSUB -n 8
+#BSUB -R "span[ptile=1]"
+#BSUB -W 00:20
+
+module load mpi/openmpi-x86_64
+
+for procs in 2 4 8; do
+    echo "Running with $procs processes"
+    mpirun -np $procs ./parallel_sort 100000
+    echo ""
+done
