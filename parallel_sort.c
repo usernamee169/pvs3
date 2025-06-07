@@ -72,4 +72,15 @@ int main(int argc, char** argv) {
         // Проверка сортировки (опционально)
         for (int i = 0; i < array_size - 1; i++) {
             if (array[i] > array[i + 1]) {
-                printf("Sorting error at
+                printf("Sorting error at index %d\n", i);
+                break;
+            }
+        }
+        
+        free(array);
+    }
+    
+    free(local_array);
+    MPI_Finalize();
+    return 0;
+}
