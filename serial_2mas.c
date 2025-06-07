@@ -4,56 +4,51 @@
 
 int main(int argc, char *argv[]) {
     if (argc != 3) {
-        fprintf(stderr, "Использование: %s <rows> <cols>\n", argv[0]);
+        printf("Usage: %s <rows> <cols>\n", argv[0]);
         return 1;
     }
 
     int rows = atoi(argv[1]);
     int cols = atoi(argv[2]);
-
-    if (rows <= 0 || cols <= 0 || (long)rows * cols < 100000) {
-        fprintf(stderr, "Размеры массивов должны быть положительными и общее количество элементов должно быть не менее 100000.\n");
+    if (rows <= 0 || cols <= 0) {
+        printf("Dimensions must be positive\n");
         return 1;
     }
 
-    double *matrix1 = (double *)malloc(rows * cols * sizeof(double));
-    double *matrix2 = (double *)malloc(rows * cols * sizeof(double));
-    double *sum = (double *)malloc(rows * cols * sizeof(double));
-    double *difference = (double *)malloc(rows * cols * sizeof(double));
-    double *product = (double *)malloc(rows * cols * sizeof(double));
-    double *quotient = (double *)malloc(rows * cols * sizeof(double));
-
-    if (!matrix1 || !matrix2 || !sum || !difference || !product || !quotient) {
-        fprintf(stderr, "Ошибка выделения памяти.\n");
-        return 1;
+    int **arr1 = (int **)malloc(rows * sizeof(int *));
+    int **arr2 = (int **)malloc(rows * sizeof(int *));
+    for (int i = 0; i < rows; i++) {
+        arr1[i] = (int *)malloc(cols * sizeof(int));
+        arr2[i] = (int *)malloc(cols * sizeof(int));
     }
 
     srand(time(NULL));
-    for (int i = 0; i < rows * cols; i++) {
-        matrix1[i] = (double)rand() / RAND_MAX;
-        matrix2[i] = (double)rand() / RAND_MAX; 
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            arr1[i][j] = rand() % 1000 + 1;
+            arr2[i][j] = rand() % 1000 + 1;
+        }
     }
 
     clock_t start = clock();
-    for (int i = 0; i < rows * cols; i++) {
-        sum[i] = matrix1[i] + matrix2[i];
-        difference[i] = matrix1[i] - matrix2[i];
-        product[i] = matrix1[i] * matrix2[i];
-        quotient[i] = (matrix2[i] != 0) ? matrix1[i] / matrix2[i] : 0;
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            int sum = arr1[i][j] + arr2[i][j];
+            int diff = arr1[i][j] - arr2[i][j];
+            int prod = arr1[i][j] * arr2[i][j];
+            float div = (float)arr1[i][j] / arr2[i][j];
+        }
     }
     clock_t end = clock();
 
-    double time_spent = (double)(end - start) / CLOCKS_PER_SEC;
+    printf("Operations completed\n");
+    printf("Time taken: %f seconds\n", (double)(end - start) / CLOCKS_PER_SEC);
 
-
-    printf("Время выполнения: %f секунд\n", time_spent);
-
-    free(matrix1);
-    free(matrix2);
-    free(sum);
-    free(difference);
-    free(product);
-    free(quotient);
-
+    for (int i = 0; i < rows; i++) {
+        free(arr1[i]);
+        free(arr2[i]);
+    }
+    free(arr1);
+    free(arr2);
     return 0;
 }
