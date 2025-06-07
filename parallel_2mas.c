@@ -1,131 +1,151 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 #include <mpi.h>
+#include <time.h>
+
+void initialize_array(double *array, int size) {
+    for (int i = 0; i < size; i++) {
+        array[i] = (double)rand() / RAND_MAX * 100.0;
+    }
+}
+
+void perform_operations(double *a, double *b, double *add, double *sub, double *mul, double *div, int size) {
+    for (int i = 0; i < size; i++) {
+        add[i] = a[i] + b[i];
+        sub[i] = a[i] - b[i];
+        mul[i] = a[i] * b[i];
+        div[i] = b[i] != 0.0 ? a[i] / b[i] : 0.0;
+    }
+}
 
 int main(int argc, char *argv[]) {
-    int rank, size;
-    int rows, cols;
-    double *matrix1 = NULL;
-    double *matrix2 = NULL;
-    double *sum = NULL;
-    double *difference = NULL;
-    double *product = NULL;
-    double *quotient = NULL;
-
     MPI_Init(&argc, &argv);
+
+    int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    if (rank == 0) {
-        if (argc != 3) {
-            fprintf(stderr, "Использование: %s <rows> <cols>\n", argv[0]);
-            MPI_Abort(MPI_COMM_WORLD, 1);
+    if (argc != 3) {
+        if (rank == 0) {
+            printf("Usage: %s <rows> <cols>\n", argv[0]);
         }
-
-        rows = atoi(argv[1]);
-        cols = atoi(argv[2]);
-
-        if (rows <= 0 || cols <= 0 || (long)rows * cols < 100000) {
-            fprintf(stderr, "Размеры массивов должны быть положительными и общее количество элементов должно быть не менее 100000.\n");
-            MPI_Abort(MPI_COMM_WORLD, 1);
-        }
-
-        matrix1 = (double *)malloc(rows * cols * sizeof(double));
-        matrix2 = (double *)malloc(rows * cols * sizeof(double));
-        sum = (double *)malloc(rows * cols * sizeof(double));
-        difference = (double *)malloc(rows * cols * sizeof(double));
-        product = (double *)malloc(rows * cols * sizeof(double));
-        quotient = (double *)malloc(rows * cols * sizeof(double));
-
-        if (!matrix1 || !matrix2 || !sum || !difference || !product || !quotient) {
-            fprintf(stderr, "Ошибка выделения памяти.\n");
-            MPI_Abort(MPI_COMM_WORLD, 1);
-        }
-
-        srand(time(NULL));
-        for (int i = 0; i < rows * cols; i++) {
-            matrix1[i] = (double)rand() / RAND_MAX;
-            matrix2[i] = (double)rand() / RAND_MAX;
-        }
+        MPI_Finalize();
+        return 1;
     }
 
-    // Рассылаем размеры массивов всем процессам
-    MPI_Bcast(&rows, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&cols, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    int rows = atoi(argv[1]);
+    int cols = atoi(argv[2]);
+    int total_elements = rows * cols;
 
-    // Вычисляем размер части массива для каждого процесса
-    int chunk_size = (rows * cols) / size;
-    int remainder = (rows * cols) % size;
+    if (rows <= 0 || cols <= 0 || total_elements < 100000) {
+        if (rank == 0) {
+            printf("Arrays must have at least 100000 elements (rows * cols >= 100000)\n");
+        }
+        MPI_Finalize();
+        return 1;
+    }
 
-    // Вычисляем начальный и конечный индекс для каждого процесса
-    int start_index = rank * chunk_size + (rank < remainder ? rank : remainder);
-    int end_index = start_index + chunk_size + (rank < remainder ? 1 : 0);
+    // Разделяем работу между процессами
+    int elements_per_proc = total_elements / size;
+    int remainder = total_elements % size;
+
+    // Определяем количество элементов для текущего процесса
+    int local_count = elements_per_proc + (rank < remainder ? 1 : 0);
+    int *counts = NULL;
+    int *displs = NULL;
+
+    if (rank == 0) {
+        counts = (int *)malloc(size * sizeof(int));
+        displs = (int *)malloc(size * sizeof(int));
+
+        int offset = 0;
+        for (int i = 0; i < size; i++) {
+            counts[i] = elements_per_proc + (i < remainder ? 1 : 0);
+            displs[i] = offset;
+            offset += counts[i];
+        }
+    }
 
     // Выделяем память для локальных частей массивов
-    double *local_matrix1 = (double *)malloc((end_index - start_index) * sizeof(double));
-    double *local_matrix2 = (double *)malloc((end_index - start_index) * sizeof(double));
-    double *local_sum = (double *)malloc((end_index - start_index) * sizeof(double));
-    double *local_difference = (double *)malloc((end_index - start_index) * sizeof(double));
-    double *local_product = (double *)malloc((end_index - start_index) * sizeof(double));
-    double *local_quotient = (double *)malloc((end_index - start_index) * sizeof(double));
+    double *local_a = (double *)malloc(local_count * sizeof(double));
+    double *local_b = (double *)malloc(local_count * sizeof(double));
+    double *local_add = (double *)malloc(local_count * sizeof(double));
+    double *local_sub = (double *)malloc(local_count * sizeof(double));
+    double *local_mul = (double *)malloc(local_count * sizeof(double));
+    double *local_div = (double *)malloc(local_count * sizeof(double));
 
-    if (!local_matrix1 || !local_matrix2 || !local_sum || !local_difference || !local_product || !local_quotient) {
-        fprintf(stderr, "Ошибка выделения памяти для локальных массивов.\n");
-        MPI_Abort(MPI_COMM_WORLD, 1);
+    // Инициализация массивов в процессе 0
+    double *a = NULL;
+    double *b = NULL;
+
+    if (rank == 0) {
+        a = (double *)malloc(total_elements * sizeof(double));
+        b = (double *)malloc(total_elements * sizeof(double));
+        srand(time(NULL));
+        initialize_array(a, total_elements);
+        initialize_array(b, total_elements);
     }
 
-    // Рассылаем части массивов всем процессам
-    MPI_Scatterv(matrix1, chunk_size + (remainder > 0), MPI_DOUBLE, local_matrix1, (end_index - start_index), MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Scatterv(matrix2, chunk_size + (remainder > 0), MPI_DOUBLE, local_matrix2, (end_index - start_index), MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    // Разделяем данные между процессами
+    MPI_Scatterv(a, counts, displs, MPI_DOUBLE, local_a, local_count, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Scatterv(b, counts, displs, MPI_DOUBLE, local_b, local_count, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-
-    MPI_Barrier(MPI_COMM_WORLD);
+    // Выполняем операции
     double start_time = MPI_Wtime();
-    for (int i = 0; i < (end_index - start_index); i++) {
-        local_sum[i] = local_matrix1[i] + local_matrix2[i];
-        local_difference[i] = local_matrix1[i] - local_matrix2[i];
-        local_product[i] = local_matrix1[i] * local_matrix2[i];
-        local_quotient[i] = (local_matrix2[i] != 0) ? local_matrix1[i] / local_matrix2[i] : 0;
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
+    perform_operations(local_a, local_b, local_add, local_sub, local_mul, local_div, local_count);
     double end_time = MPI_Wtime();
 
-    double local_time = end_time - start_time;
-    double max_time;
-
-    MPI_Reduce(&local_time, &max_time, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-
-
-    // Собираем результаты обратно 
-    MPI_Gatherv(local_sum, (end_index - start_index), MPI_DOUBLE, sum, chunk_size + (remainder > 0), MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Gatherv(local_difference, (end_index - start_index), MPI_DOUBLE, difference, chunk_size + (remainder > 0), MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Gatherv(local_product, (end_index - start_index), MPI_DOUBLE, product, chunk_size + (remainder > 0), MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Gatherv(local_quotient, (end_index - start_index), MPI_DOUBLE, quotient, chunk_size + (remainder > 0), MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
+    // Собираем результаты
+    double *add = NULL;
+    double *sub = NULL;
+    double *mul = NULL;
+    double *div = NULL;
 
     if (rank == 0) {
-        printf("Параллельное выполнение завершено.\n");
-        printf("Максимальное время выполнения: %f секунд\n", max_time);
+        add = (double *)malloc(total_elements * sizeof(double));
+        sub = (double *)malloc(total_elements * sizeof(double));
+        mul = (double *)malloc(total_elements * sizeof(double));
+        div = (double *)malloc(total_elements * sizeof(double));
     }
 
-
-    free(local_matrix1);
-    free(local_matrix2);
-    free(local_sum);
-    free(local_difference);
-    free(local_product);
-    free(local_quotient);
-
+    MPI_Gatherv(local_add, local_count, MPI_DOUBLE, add, counts, displs, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Gatherv(local_sub, local_count, MPI_DOUBLE, sub, counts, displs, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Gatherv(local_mul, local_count, MPI_DOUBLE, mul, counts, displs, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Gatherv(local_div, local_count, MPI_DOUBLE, div, counts, displs, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     if (rank == 0) {
-        free(matrix1);
-        free(matrix2);
-        free(sum);
-        free(difference);
-        free(product);
-        free(quotient);
+        printf("Parallel execution time with %d processes: %.4f seconds\n", size, end_time - start_time);
+
+        // Для больших массивов вывод не имеет смысла, поэтому закомментирован
+        /*
+        printf("First 10 elements of each operation:\n");
+        printf("Addition: ");
+        for (int i = 0; i < 10; i++) printf("%.2f ", add[i]);
+        printf("\nSubtraction: ");
+        for (int i = 0; i < 10; i++) printf("%.2f ", sub[i]);
+        printf("\nMultiplication: ");
+        for (int i = 0; i < 10; i++) printf("%.2f ", mul[i]);
+        printf("\nDivision: ");
+        for (int i = 0; i < 10; i++) printf("%.2f ", div[i]);
+        printf("\n");
+        */
+
+        free(a);
+        free(b);
+        free(add);
+        free(sub);
+        free(mul);
+        free(div);
+        free(counts);
+        free(displs);
     }
+
+    free(local_a);
+    free(local_b);
+    free(local_add);
+    free(local_sub);
+    free(local_mul);
+    free(local_div);
 
     MPI_Finalize();
     return 0;
