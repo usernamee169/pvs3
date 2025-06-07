@@ -1,0 +1,15 @@
+#!/bin/bash
+#BSUB -J sum_array
+#BSUB -o sump.out
+#BSUB -e sump.err
+#BSUB -n 8
+#BSUB -R "span[ptile=1]"
+#BSUB -W 00:05
+
+module load openmpi
+
+for procs in 2 4 8; do
+    echo "Running with $procs processes"
+    mpirun -np $procs ./sum_array 1000000
+    echo ""
+done
