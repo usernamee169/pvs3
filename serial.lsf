@@ -1,0 +1,11 @@
+#!/bin/bash
+#BSUB -J seq_sum
+#BSUB -o seq_sum.out
+#BSUB -e seq_sum.err
+#BSUB -n 1
+#BSUB -W 00:10
+
+./serial_sum 1000000
+./serial_sort 100000
+./serial_1mas 1000000
+./serial_2mas 1000 1000
