@@ -2,18 +2,10 @@
 #include <stdlib.h>
 #include <time.h>
 
-void print_array(int arr[], int n) {
-    for (int i = 0; i < n; i++) {
-        printf("%d ", arr[i]);
-    }
-    printf("\n");
-}
-
-void bubble_sort(int arr[], int n) {
-    for (int i = 0; i < n - 1; i++) {
-        for (int j = 0; j < n - i - 1; j++) {
+void bubble_sort(int *arr, int size) {
+    for (int i = 0; i < size - 1; i++) {
+        for (int j = 0; j < size - i - 1; j++) {
             if (arr[j] > arr[j + 1]) {
-                // Обмен элементов
                 int temp = arr[j];
                 arr[j] = arr[j + 1];
                 arr[j + 1] = temp;
@@ -24,39 +16,33 @@ void bubble_sort(int arr[], int n) {
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
-        fprintf(stderr, "Использование: %s <размер_массива>\n", argv[0]);
+        printf("Usage: %s <array_size>\n", argv[0]);
         return 1;
     }
 
-    int n = atoi(argv[1]); // Получаем размер массива из аргументов командной строки
-
-    if (n <= 0) {
-        fprintf(stderr, "Размер массива должен быть положительным целым числом.\n");
+    int size = atoi(argv[1]);
+    if (size <= 0) {
+        printf("Array size must be positive\n");
         return 1;
     }
 
-    int *arr = (int *)malloc(n * sizeof(int)); 
-
-    if (arr == NULL) {
-        fprintf(stderr, "Ошибка выделения памяти.\n");
-        return 1;
-    }
-
+    int *arr = (int *)malloc(size * sizeof(int));
     srand(time(NULL));
-    for (int i = 0; i < n; i++) {
-        arr[i] = rand() % 1000; 
+
+    for (int i = 0; i < size; i++) {
+        arr[i] = rand() % 1000;
     }
 
+    clock_t start = clock();
+    bubble_sort(arr, size);
+    clock_t end = clock();
 
-    clock_t start_time = clock();
-    bubble_sort(arr, n);
-    clock_t end_time = clock();
+    printf("First 10 elements: ");
+    for (int i = 0; i < 10 && i < size; i++) {
+        printf("%d ", arr[i]);
+    }
+    printf("\nTime taken: %f seconds\n", (double)(end - start) / CLOCKS_PER_SEC);
 
-    double time_taken = ((double)(end_time - start_time)) / CLOCKS_PER_SEC; 
-
-
-    printf("Время сортировки: %f секунд\n", time_taken);
-
-    free(arr); 
+    free(arr);
     return 0;
 }
