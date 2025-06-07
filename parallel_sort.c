@@ -3,107 +3,67 @@
 #include <time.h>
 #include <mpi.h>
 
-void print_array(int arr[], int n) {
-    for (int i = 0; i < n; i++) {
-        printf("%d ", arr[i]);
-    }
-    printf("\n");
-}
-
-void swap(int *a, int *b) {
-    int temp = *a;
-    *a = *b;
-    *b = temp;
-}
-
-void odd_even_sort(int arr[], int n) {
-    int sorted = 0;
-    while (!sorted) {
-        sorted = 1;
-
-        for (int i = 0; i < n - 1; i += 2) {
-            if (arr[i] > arr[i + 1]) {
-                swap(&arr[i], &arr[i + 1]);
-                sorted = 0;
+void bubble_sort(int *arr, int size) {
+    for (int i = 0; i < size - 1; i++) {
+        for (int j = 0; j < size - i - 1; j++) {
+            if (arr[j] > arr[j + 1]) {
+                int temp = arr[j];
+                arr[j] = arr[j + 1];
+                arr[j + 1] = temp;
             }
         }
-
-        for (int i = 1; i < n - 1; i += 2) {
-            if (arr[i] > arr[i + 1]) {
-                swap(&arr[i], &arr[i + 1]);
-                sorted = 0;
-            }
-        }
-
-        MPI_Allreduce(MPI_IN_PLACE, &sorted, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);
     }
 }
-
 
 int main(int argc, char *argv[]) {
-    int rank, size;
-    int n;
-    int *arr = NULL;
-    double start_time, end_time;
-
     MPI_Init(&argc, &argv);
+
+    int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
+    if (argc != 2) {
+        if (rank == 0) printf("Usage: %s <array_size>\n", argv[0]);
+        MPI_Finalize();
+        return 1;
+    }
+
+    int arr_size = atoi(argv[1]);
+    if (arr_size <= 0) {
+        if (rank == 0) printf("Array size must be positive\n");
+        MPI_Finalize();
+        return 1;
+    }
+
+    int *arr = NULL;
     if (rank == 0) {
-        if (argc != 2) {
-            fprintf(stderr, "Использование: %s <размер_массива>\n", argv[0]);
-            MPI_Abort(MPI_COMM_WORLD, 1);
-        }
-
-        n = atoi(argv[1]);
-        if (n <= 0) {
-            fprintf(stderr, "Размер массива должен быть положительным целым числом.\n");
-            MPI_Abort(MPI_COMM_WORLD, 1);
-        }
-
-        arr = (int *)malloc(n * sizeof(int));
-        if (arr == NULL) {
-            fprintf(stderr, "Ошибка выделения памяти.\n");
-            MPI_Abort(MPI_COMM_WORLD, 1);
-        }
-
+        arr = (int *)malloc(arr_size * sizeof(int));
         srand(time(NULL));
-        for (int i = 0; i < n; i++) {
+        for (int i = 0; i < arr_size; i++) {
             arr[i] = rand() % 1000;
         }
     }
 
+    double start = MPI_Wtime();
+    int local_size = arr_size / size;
+    int *local_arr = (int *)malloc(local_size * sizeof(int));
 
-    MPI_Bcast(&n, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Scatter(arr, local_size, MPI_INT, local_arr, local_size, MPI_INT, 0, MPI_COMM_WORLD);
 
-    int local_n = n / size;
-    if (n % size != 0) {
-        if (rank == 0) {
-          fprintf(stderr, "Размер массива должен быть кратен количеству процессов.\n");
-        }
-        MPI_Abort(MPI_COMM_WORLD, 1);
-    }
+    bubble_sort(local_arr, local_size);
 
-    int *local_arr = (int *)malloc(local_n * sizeof(int));
-    if (local_arr == NULL) {
-        fprintf(stderr, "Ошибка выделения памяти на процессе %d.\n", rank);
-        MPI_Abort(MPI_COMM_WORLD, 1);
-    }
-
-    MPI_Scatter(arr, local_n, MPI_INT, local_arr, local_n, MPI_INT, 0, MPI_COMM_WORLD);
-
-    start_time = MPI_Wtime();
-
-    odd_even_sort(local_arr, local_n);
-
-    end_time = MPI_Wtime();
-
-    MPI_Gather(local_arr, local_n, MPI_INT, arr, local_n, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Gather(local_arr, local_size, MPI_INT, arr, local_size, MPI_INT, 0, MPI_COMM_WORLD);
 
     if (rank == 0) {
-       printf("Время параллельной сортировки: %f секунд,  количество процессов = %d\n", end_time - start_time, size);
-       free(arr);
+        bubble_sort(arr, arr_size);
+        double end = MPI_Wtime();
+
+        printf("First 10 elements: ");
+        for (int i = 0; i < 10 && i < arr_size; i++) {
+            printf("%d ", arr[i]);
+        }
+        printf("\nTime taken: %f seconds\n", end - start);
+        free(arr);
     }
 
     free(local_arr);
