@@ -4,13 +4,13 @@
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
-        printf("Usage: %s <array_size>\n", argv[0]);
+        printf("Используется: %s <array_size>\n", argv[0]);
         return 1;
     }
 
     int size = atoi(argv[1]);
     if (size <= 0) {
-        printf("Array size must be positive\n");
+        printf("Размер массива положительное значение!\n");
         return 1;
     }
 
@@ -28,8 +28,8 @@ int main(int argc, char *argv[]) {
     }
     clock_t end = clock();
 
-    printf("Array sum: %lld\n", sum);
-    printf("Time taken: %f seconds\n", (double)(end - start) / CLOCKS_PER_SEC);
+    printf("Сумма: %lld\n", sum);
+    printf("Время: %f seconds\n", (double)(end - start) / CLOCKS_PER_SEC);
 
     free(arr);
     return 0;
