@@ -4,15 +4,11 @@
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
-        printf("Usage: %s <array_size>\n", argv[0]);
+        printf("Использование: %s <array_size>\n", argv[0]);
         return 1;
     }
 
     int size = atoi(argv[1]);
-    if (size <= 0) {
-        printf("Array size must be positive\n");
-        return 1;
-    }
 
     int *arr1 = (int *)malloc(size * sizeof(int));
     int *arr2 = (int *)malloc(size * sizeof(int));
@@ -32,8 +28,7 @@ int main(int argc, char *argv[]) {
     }
     clock_t end = clock();
 
-    printf("Operations completed\n");
-    printf("Time taken: %f seconds\n", (double)(end - start) / CLOCKS_PER_SEC);
+    printf("Время: %f seconds\n", (double)(end - start) / CLOCKS_PER_SEC);
 
     free(arr1);
     free(arr2);
