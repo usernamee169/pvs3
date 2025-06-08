@@ -16,13 +16,13 @@ void bubble_sort(int *arr, int size) {
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
-        printf("Usage: %s <array_size>\n", argv[0]);
+        printf("Используется: %s <array_size>\n", argv[0]);
         return 1;
     }
 
     int size = atoi(argv[1]);
     if (size <= 0) {
-        printf("Array size must be positive\n");
+        printf("Размер массива положительное значение!\n");
         return 1;
     }
 
@@ -37,11 +37,8 @@ int main(int argc, char *argv[]) {
     bubble_sort(arr, size);
     clock_t end = clock();
 
-    printf("First 10 elements: ");
-    for (int i = 0; i < 10 && i < size; i++) {
-        printf("%d ", arr[i]);
-    }
-    printf("\nTime taken: %f seconds\n", (double)(end - start) / CLOCKS_PER_SEC);
+    
+    printf("\nВремя: %f seconds\n", (double)(end - start) / CLOCKS_PER_SEC);
 
     free(arr);
     return 0;
