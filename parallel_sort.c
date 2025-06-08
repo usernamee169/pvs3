@@ -24,7 +24,7 @@ int main(int argc, char** argv) {
     
     if (argc != 2) {
         if (rank == 0) {
-            printf("Usage: mpirun -np <processes> %s <array_size>\n", argv[0]);
+            printf("Использование: mpirun -np <processes> %s <array_size>\n", argv[0]);
         }
         MPI_Finalize();
         return 1;
@@ -66,16 +66,7 @@ int main(int argc, char** argv) {
         bubble_sort(array, array_size);
         
         end_time = MPI_Wtime();
-        printf("Array size: %d\n", array_size);
-        printf("Execution time: %.6f seconds\n", end_time - start_time);
-        
-        // Проверка сортировки (опционально)
-        for (int i = 0; i < array_size - 1; i++) {
-            if (array[i] > array[i + 1]) {
-                printf("Sorting error at index %d\n", i);
-                break;
-            }
-        }
+        printf("Время: %.6f seconds\n", end_time - start_time);
         
         free(array);
     }
