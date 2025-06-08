@@ -12,7 +12,7 @@ int main(int argc, char** argv) {
     
     if (argc != 2) {
         if (rank == 0) {
-            printf("Usage: mpirun -np <processes> %s <array_size>\n", argv[0]);
+            printf("Использование: mpirun -np <processes> %s <array_size>\n", argv[0]);
         }
         MPI_Finalize();
         return 1;
@@ -80,17 +80,8 @@ int main(int argc, char** argv) {
         }
         
         end_time = MPI_Wtime();
-        printf("Array size: %d\n", array_size);
-        printf("Execution time: %.6f seconds\n", end_time - start_time);
+        printf("Время: %.6f seconds\n", end_time - start_time);
         
-        // Вывод первых 5 результатов для проверки (опционально)
-        printf("First 5 results:\n");
-        for (int i = 0; i < 5; i++) {
-            printf("%d: %d + %d = %d\n", i, array1[i], array2[i], global_add[i]);
-            printf("%d: %d - %d = %d\n", i, array1[i], array2[i], global_sub[i]);
-            printf("%d: %d * %d = %d\n", i, array1[i], array2[i], global_mul[i]);
-            printf("%d: %d / %d = %d\n", i, array1[i], array2[i], global_div[i]);
-        }
         
         free(array1);
         free(array2);
