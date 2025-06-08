@@ -12,7 +12,7 @@ int main(int argc, char** argv) {
     
     if (argc != 3) {
         if (rank == 0) {
-            printf("Usage: mpirun -np <processes> %s <rows> <cols>\n", argv[0]);
+            printf("Использование: mpirun -np <processes> %s <rows> <cols>\n", argv[0]);
         }
         MPI_Finalize();
         return 1;
@@ -83,19 +83,8 @@ int main(int argc, char** argv) {
         }
         
         end_time = MPI_Wtime();
-        printf("Matrix size: %d x %d (%d elements)\n", rows, cols, total_elements);
-        printf("Execution time: %.6f seconds\n", end_time - start_time);
+        printf("Время: %.6f seconds\n", end_time - start_time);
         
-        // Вывод первых 5 результатов для проверки (опционально)
-        printf("First 5 results:\n");
-        for (int i = 0; i < 5; i++) {
-            int row = i / cols;
-            int col = i % cols;
-            printf("(%d,%d): %d + %d = %d\n", row, col, array1[i], array2[i], global_add[i]);
-            printf("(%d,%d): %d - %d = %d\n", row, col, array1[i], array2[i], global_sub[i]);
-            printf("(%d,%d): %d * %d = %d\n", row, col, array1[i], array2[i], global_mul[i]);
-            printf("(%d,%d): %d / %d = %d\n", row, col, array1[i], array2[i], global_div[i]);
-        }
         
         free(array1);
         free(array2);
