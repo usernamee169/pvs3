@@ -4,16 +4,12 @@
 
 int main(int argc, char *argv[]) {
     if (argc != 3) {
-        printf("Usage: %s <rows> <cols>\n", argv[0]);
+        printf("Использование: %s <rows> <cols>\n", argv[0]);
         return 1;
     }
 
     int rows = atoi(argv[1]);
     int cols = atoi(argv[2]);
-    if (rows <= 0 || cols <= 0) {
-        printf("Dimensions must be positive\n");
-        return 1;
-    }
 
     int **arr1 = (int **)malloc(rows * sizeof(int *));
     int **arr2 = (int **)malloc(rows * sizeof(int *));
@@ -41,8 +37,7 @@ int main(int argc, char *argv[]) {
     }
     clock_t end = clock();
 
-    printf("Operations completed\n");
-    printf("Time taken: %f seconds\n", (double)(end - start) / CLOCKS_PER_SEC);
+    printf("Время: %f seconds\n", (double)(end - start) / CLOCKS_PER_SEC);
 
     for (int i = 0; i < rows; i++) {
         free(arr1[i]);
