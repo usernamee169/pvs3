@@ -12,7 +12,7 @@ int main(int argc, char** argv) {
     
     if (argc != 2) {
         if (rank == 0) {
-            printf("Usage: mpirun -np <processes> %s <array_size>\n", argv[0]);
+            printf("Используется: mpirun -np <processes> %s <array_size>\n", argv[0]);
         }
         MPI_Finalize();
         return 1;
@@ -55,9 +55,8 @@ int main(int argc, char** argv) {
         }
         
         end_time = MPI_Wtime();
-        printf("Array size: %d\n", array_size);
-        printf("Total sum: %d\n", global_sum);
-        printf("Execution time: %.6f seconds\n", end_time - start_time);
+        printf("Сумма: %d\n", global_sum);
+        printf("Время: %.6f seconds\n", end_time - start_time);
         free(array);
     }
     
