@@ -9,10 +9,6 @@ int main(int argc, char *argv[]) {
     }
 
     int size = atoi(argv[1]);
-    if (size <= 0) {
-        printf("Размер массива положительное значение!\n");
-        return 1;
-    }
 
     int *arr = (int *)malloc(size * sizeof(int));
     srand(time(NULL));
